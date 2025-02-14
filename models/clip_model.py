@@ -1,4 +1,6 @@
-from transformers import CLIPProcessor, CLIPModel
+# clip_model.py
+
+from transformers import CLIPProcessor, CLIPModel, BlipProcessor, BlipForConditionalGeneration
 import torch
 from PIL import Image
 import numpy as np
@@ -8,8 +10,12 @@ from transformers import pipeline
 model = CLIPModel.from_pretrained("./clip-vit-base-patch32/")
 processor = CLIPProcessor.from_pretrained("./clip-vit-base-patch32/")
 
+# 加载 BLIP 模型和处理器
+blip_processor = BlipProcessor.from_pretrained("./blip-image-captioning-base")
+blip_model = BlipForConditionalGeneration.from_pretrained("./blip-image-captioning-base")
+
 # 创建情感分析管道
-sentiment_analyzer = pipeline("sentiment-analysis",model="./distilbert-base-uncased-finetuned-sst-2-english/")
+sentiment_analyzer = pipeline("sentiment-analysis", model="./distilbert-base-uncased-finetuned-sst-2-english/")
 
 # 情感分析函数
 def analyze_sentiment(text):
@@ -50,3 +56,30 @@ def get_image_features(image):
     inputs = processor(images=image, return_tensors="pt")
     image_features = model.get_image_features(**inputs)
     return image_features.detach().numpy()
+
+# 图像问答功能（BLIP）
+def answer_question_with_image(image: Image, question: str) -> str:
+    """
+    使用BLIP模型生成图像和问题的答案
+    :param image: 上传的图像
+    :param question: 用户输入的问题
+    :return: 问题的答案
+    """
+    # 处理图像
+    inputs = blip_processor(images=image, return_tensors="pt")
+
+    # 使用BLIP模型生成答案
+    outputs = blip_model.generate(
+        **inputs,
+        max_new_tokens=700,  # 显式指定新生成token数
+        do_sample=True,
+        temperature=0.9,    # 提高随机性
+        top_p=0.95,         # 核采样过滤低概率选项
+        top_k=700,           # 限制候选词数量
+        repetition_penalty=1.2,  # 抑制重复
+    )
+
+    # 获取生成的答案
+    answer = blip_processor.decode(outputs[0], skip_special_tokens=True)
+    
+    return answer
