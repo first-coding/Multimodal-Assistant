@@ -2,6 +2,7 @@ import gradio as gr
 from models.clip_model import analyze_sentiment, query_image_from_text, answer_question_with_image
 import numpy as np
 
+
 # Gradio回调函数
 def multimodal_query(input_text, input_sentence, input_image, input_question):
     sentiment = ""  # 初始化情感分析结果
@@ -39,6 +40,7 @@ def launch_interface():
             gr.Textbox(label="图像问答结果")  # 输出图像问答的答案
         ]
     )
+    
     interface.launch()
 
 
